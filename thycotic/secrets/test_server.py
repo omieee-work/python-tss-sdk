@@ -47,4 +47,4 @@ def test_server_secret(secret_server):
 
 def test_nonexistent_secret(secret_server):
     with pytest.raises(SecretServerAccessError):
-        secret_server(server_json).get_secret(1000)
+        secret_server.get_secret(1000)
