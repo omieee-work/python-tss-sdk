@@ -107,6 +107,7 @@ class SecretServerAccessError(SecretServerError):
 
 
 class Authorizer(ABC):
+    """Main abstract base class for all Authorizer access methods."""
     @staticmethod
     def add_bearer_token_authorization_header(bearer_token, existing_headers={}):
         """Adds an HTTP `Authorization` header containing the `Bearer` token
@@ -126,12 +127,16 @@ class Authorizer(ABC):
         """Returns the access_token from a Grant Request"""
 
     def headers(self, existing_headers={}):
+        """Returns a dictionary containing headers for REST API calls"""
         return self.add_bearer_token_authorization_header(
             self.get_access_token(), existing_headers
         )
 
 
 class AccessTokenAuthorizer(Authorizer):
+    """Allows the use of a pre-existing access token to be used to authorize 
+    REST API calls.
+    """
     def get_access_token(self):
         return self.access_token
 
@@ -140,6 +145,10 @@ class AccessTokenAuthorizer(Authorizer):
 
 
 class PasswordGrantAuthorizer(Authorizer):
+    """Allows the the use of a username and password to be used to authorize 
+    REST API calls.
+    """
+
     TOKEN_PATH_URI = "/oauth2/token"
 
     @staticmethod
@@ -190,6 +199,7 @@ class PasswordGrantAuthorizer(Authorizer):
 
 
 class DomainPasswordGrantAuthorizer(PasswordGrantAuthorizer):
+    """Allows domain access to be used to authorize REST API calls."""
     def __init__(self, token_url, username, domain, password):
         self.token_url = token_url
         self.grant_request = {
@@ -202,11 +212,12 @@ class DomainPasswordGrantAuthorizer(PasswordGrantAuthorizer):
 
 class SecretServerV1:
     """A class that uses an *OAuth2 Bearer Token* to access the Secret Server
-    REST API. It uses the :attr:`username` and :attr:`password` to access the
-    Secret Server at :attr:`base_url`.
+    REST API. It uses the and `Authorizer` to determine the Authorization 
+    method required to access the Secret Server at :attr:`base_url`.
 
     It gets an ``access_token`` that it uses to create an *HTTP Authorization
-    Header* which it includes in each REST API call."""
+    Header* which it includes in each REST API call.
+    """
 
     API_PATH_URI = "/api/v1"
 
@@ -238,6 +249,7 @@ class SecretServerV1:
         raise SecretServerError(response)
 
     def headers(self):
+        """Returns a dictionary containing HTTP headers."""
         return self.authorizer.headers()
 
     def __init__(
@@ -249,10 +261,8 @@ class SecretServerV1:
         """
         :param base_url: The base URL e.g. ``http://localhost/SecretServer``
         :type base_url: str
-        :param username: The username to authenticate as
-        :type username: str
-        :param password: The pasword to authenticate with
-        :type password: str
+        :param authorizer: The authorization method to be used
+        :type authorizer: Authorizer
         :param api_path_uri: Defaults to ``/api/v1``
         :type api_path_uri: str"""
 
@@ -312,6 +322,16 @@ class SecretServerV1:
 
 
 class SecretServer(SecretServerV1):
+    """A class that uses an *OAuth2 Bearer Token* to access the Secret Server
+    REST API. It uses the :attr:`username` and :attr:`password` to access the
+    Secret Server at :attr:`base_url`.
+
+    It gets an ``access_token`` that it uses to create an *HTTP Authorization
+    Header* which it includes in each REST API call.
+
+    This class maintains backwards compatability with v0.0.5
+    """
+    
     def __init__(
         self,
         base_url,
@@ -333,7 +353,7 @@ class SecretServerCloud(SecretServerV1):
     """A class that uses bearer token authentication to access the Secret Server
     Cloud REST API.
 
-    It Uses :attr:`tenant`, :attr:`tld` with :attr:`SERVER_URL_TEMPLATE`,
+    It uses :attr:`tenant`, :attr:`tld` with :attr:`SERVER_URL_TEMPLATE`,
     to create request URLs.
 
     It uses the :attr:`username` and :attr:`password` to get an access_token from
