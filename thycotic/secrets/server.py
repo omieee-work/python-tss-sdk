@@ -16,6 +16,7 @@ Example::
 
 import json
 import re
+import warnings
 import requests
 
 from abc import ABC, abstractmethod
@@ -108,6 +109,7 @@ class SecretServerAccessError(SecretServerError):
 
 class Authorizer(ABC):
     """Main abstract base class for all Authorizer access methods."""
+
     @staticmethod
     def add_bearer_token_authorization_header(bearer_token, existing_headers={}):
         """Adds an HTTP `Authorization` header containing the `Bearer` token
@@ -134,9 +136,10 @@ class Authorizer(ABC):
 
 
 class AccessTokenAuthorizer(Authorizer):
-    """Allows the use of a pre-existing access token to be used to authorize 
+    """Allows the use of a pre-existing access token to be used to authorize
     REST API calls.
     """
+
     def get_access_token(self):
         return self.access_token
 
@@ -145,7 +148,7 @@ class AccessTokenAuthorizer(Authorizer):
 
 
 class PasswordGrantAuthorizer(Authorizer):
-    """Allows the the use of a username and password to be used to authorize 
+    """Allows the the use of a username and password to be used to authorize
     REST API calls.
     """
 
@@ -200,6 +203,7 @@ class PasswordGrantAuthorizer(Authorizer):
 
 class DomainPasswordGrantAuthorizer(PasswordGrantAuthorizer):
     """Allows domain access to be used to authorize REST API calls."""
+
     def __init__(self, token_url, username, domain, password):
         self.token_url = token_url
         self.grant_request = {
@@ -212,7 +216,7 @@ class DomainPasswordGrantAuthorizer(PasswordGrantAuthorizer):
 
 class SecretServerV1:
     """A class that uses an *OAuth2 Bearer Token* to access the Secret Server
-    REST API. It uses the and `Authorizer` to determine the Authorization 
+    REST API. It uses the and `Authorizer` to determine the Authorization
     method required to access the Secret Server at :attr:`base_url`.
 
     It gets an ``access_token`` that it uses to create an *HTTP Authorization
@@ -331,7 +335,7 @@ class SecretServer(SecretServerV1):
 
     This class maintains backwards compatability with v0.0.5
     """
-    
+
     def __init__(
         self,
         base_url,
@@ -347,6 +351,11 @@ class SecretServer(SecretServerV1):
             ),
             api_path_uri,
         )
+
+    warnings.warn(
+        "The current implementation of this class will be changed in v0.1.0 to that of SecretServerV1",
+        PendingDeprecationWarning,
+    )
 
 
 class SecretServerCloud(SecretServerV1):
@@ -372,3 +381,5 @@ class SecretServerCloud(SecretServerV1):
                 password,
             ),
         )
+
+    warnings.warn("", PendingDeprecationWarning)
