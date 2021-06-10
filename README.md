@@ -71,9 +71,9 @@ from thycotic.secrets.server import AccessTokenAuthorizer
 authorizer = AccessTokenAuthorizer("insert_access_token_here")
 ```
 
-## Initializing SecretServer
+### Initializing SecretServer
 
-In v0.0.6 `SecretServerV1` replaces `SecretServer`. However, `SecretServer` is still available for backwards compatibility with v0.0.5 and earlier. In version 1.0, the current implementation will be deprecated and `SecretServerV1` will become `SecretServer`.
+In v0.0.6 `SecretServerV1` replaces `SecretServer`. However, `SecretServer` is still available for backwards compatibility with v0.0.5 and earlier. In version 0.1.0, the current implementation will be deprecated and `SecretServerV1` will become `SecretServer`.
 
 To instantiate the `SecretServerV1` class, it requires a `base_url`, `authorizer` object (see above), and an optional `api_path_uri` (defaults to `"/api/v1"`)
 
