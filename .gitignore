@@ -134,3 +134,4 @@ dmypy.json
 
 # Test Config
 test_server.json
+thycotic/main.py
