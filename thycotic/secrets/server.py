@@ -36,8 +36,8 @@ class ServerSecret:
         return [
             (
                 re.compile("([a-z0-9])([A-Z])")
-                .sub(r"\1_\2", re.compile(r"(.)([A-Z][a-z]+)").sub(r"\1_\2", k))
-                .lower(),
+                    .sub(r"\1_\2", re.compile(r"(.)([A-Z][a-z]+)").sub(r"\1_\2", k))
+                    .lower(),
                 v,
             )
             for (k, v) in camel_cased.items()
@@ -128,7 +128,8 @@ class Authorizer(ABC):
     def get_access_token(self):
         """Returns the access_token from a Grant Request"""
 
-    def headers(self, existing_headers={}):
+    def headers(self,
+                existing_headers={'Accept': 'application/json', 'content-type': 'application/x-www-form-urlencoded'}):
         """Returns a dictionary containing headers for REST API calls"""
         return self.add_bearer_token_authorization_header(
             self.get_access_token(), existing_headers
@@ -158,12 +159,19 @@ class PasswordGrantAuthorizer(Authorizer):
         :raise :class:`SecretServerError` when the server returns anything
                 other than a valid Access Grant"""
 
-        response = requests.post(token_url, grant_request)
-
-        try:  # TSS returns a 200 (OK) containing HTML for some error conditions
-            return json.loads(SecretServer.process(response).content)
-        except json.JSONDecodeError:
-            raise SecretServerError(response)
+        # response = requests.post(token_url, grant_request)
+        # headers = {'Accept': 'application/json', 'content-type': 'application/x-www-form-urlencoded'}
+        # response = requests.post(token_url, data=grant_request, headers=headers)
+        # print(response.request.url, response.request.headers, response.request.body)
+        #
+        # try:  # TSS returns a 200 (OK) containing HTML for some error conditions
+        #     return json.loads(SecretServer.process(response).content)
+        # except json.JSONDecodeError:
+        #     raise SecretServerError(response)
+        headers = {'Accept': 'application/json', 'content-type': 'application/x-www-form-urlencoded'}
+        resp = requests.post(token_url, data=grant_request, headers=headers)
+        access_token = resp.json()
+        return access_token['access_token']
 
     def _refresh(self, seconds_of_drift=300):
         """Refreshes the *OAuth2 Access Grant* if it has expired or will in the next
@@ -172,10 +180,10 @@ class PasswordGrantAuthorizer(Authorizer):
         :raise :class:`SecretServerError` when the server returns anything other
                than a valid Access Grant"""
         if (
-            hasattr(self, "access_grant")
-            and self.access_grant_refreshed
-            + timedelta(seconds=self.access_grant["expires_in"] + seconds_of_drift)
-            > datetime.now()
+                hasattr(self, "access_grant")
+                and self.access_grant_refreshed
+                + timedelta(seconds=self.access_grant["expires_in"] + seconds_of_drift)
+                > datetime.now()
         ):
             return
         else:
@@ -189,12 +197,12 @@ class PasswordGrantAuthorizer(Authorizer):
         self.grant_request = {
             "username": username,
             "password": password,
-            "grant_type": "password",
         }
 
     def get_access_token(self):
-        self._refresh()
-        return self.access_grant["access_token"]
+        return self.get_access_grant(
+            self.token_url, self.grant_request
+        )
 
 
 class DomainPasswordGrantAuthorizer(PasswordGrantAuthorizer):
@@ -231,7 +239,6 @@ class SecretServerV1:
                 access to the secret
         :raises: :class:`SecretsAccessError` when the server responses with any
                 other error"""
-
         if response.status_code >= 200 and response.status_code < 300:
             return response
         if response.status_code >= 400 and response.status_code < 500:
@@ -250,13 +257,14 @@ class SecretServerV1:
 
     def headers(self):
         """Returns a dictionary containing HTTP headers."""
+        headers = {}
         return self.authorizer.headers()
 
     def __init__(
-        self,
-        base_url,
-        authorizer: Authorizer,
-        api_path_uri=API_PATH_URI,
+            self,
+            base_url,
+            authorizer: Authorizer,
+            api_path_uri=API_PATH_URI,
     ):
         """
         :param base_url: The base URL e.g. ``http://localhost/SecretServer``
@@ -282,12 +290,32 @@ class SecretServerV1:
         :raise: :class:`SecretServerError` when the REST API call fails for
                 any other reason
         """
-
         return self.process(
-            requests.get(f"{self.api_url}/secrets/{id}", headers=self.headers())
+            requests.get(f"{self.api_url}secrets/{id}", headers=self.headers())
         ).text
 
-    def get_secret(self, id, fetch_file_attachments=True):
+    def search_secret(self, search_criteria, dump_all_data=False):
+        """
+        Searches for a secret
+        :param search_criteria: Key to search for
+        :type ``str``
+        :param dump_all_data: whether to display all the data
+                              or just username and password
+        :type dump_all_data: bool
+        :return: an ``int`` that represents secret id
+        :rtype: ``int``
+        """
+        if dump_all_data:
+            return self.process(
+                requests.get(f"{self.api_url}secrets?filter.searchText={search_criteria}", headers=self.headers())
+            ).text
+        else:
+            data = json.loads(self.process(
+                requests.get(f"{self.api_url}secrets?filter.searchText={search_criteria}", headers=self.headers())
+            ).text)
+            return int(data["records"][0]['id'])
+
+    def get_secret_by_id(self, id, fetch_file_attachments=False):
         """Gets a secret
 
         :param id: the id of the secret
@@ -303,7 +331,6 @@ class SecretServerV1:
         :raise: :class:`SecretServerError` when the REST API call fails for
                 any other reason"""
         response = self.get_secret_json(id)
-
         try:
             secret = json.loads(response)
         except json.JSONDecodeError:
@@ -320,6 +347,59 @@ class SecretServerV1:
                     )
         return secret
 
+    def search_folder(self, search_criteria, dump_all_data=False):
+        """
+        Searches for a folder and return id or all info based on dump_all_data
+        :param search_criteria: Key to search for
+        :type ``str``
+        :param dump_all_data: whether to display all the data
+                              or just username and password
+        :type dump_all_data: bool
+        :return: an ``int`` that represents folder id
+        :rtype: ``int``
+        """
+        if dump_all_data:
+            return self.process(
+                requests.get(f"{self.api_url}folders?filter.searchText={search_criteria}", headers=self.headers())
+            ).text
+        else:
+            data = json.loads(self.process(
+                requests.get(f"{self.api_url}folders?filter.searchText={search_criteria}", headers=self.headers())
+            ).text)
+            return int(data["records"][0]['id'])
+
+
+    def create_folder(self, folder_name, parent_folder_id, folder_type=1, dump_all_data=False):
+        """
+        Create a folder with given name inside a folder
+        :param folder_name: Name of the folder that will be created
+        :type ``str``
+        :param parent_folder_id: Parent folder id inside which it will be created
+        :type ``int``
+        :param folder_type: An int value of folder type values could be 1, 2 or 3
+        :type ``int``
+        :param dump_all_data: Default to False if true return json of complete data
+        :type dump_all_data: bool
+        :return: an ``int`` that represents secret id or a json if dump_all_data = True
+        :rtype: ``int``
+        """
+        data = {
+            "folderName": str(folder_name),
+            "folderTypeId": int(folder_type),
+            "parentFolderId": int(parent_folder_id)
+        }
+        if dump_all_data:
+            return json.loads(self.process(
+                requests.post(f"{self.api_url}folders", data=data, headers=self.headers())
+            ).text)
+        else:
+            data = json.loads(self.process(
+                requests.post(f"{self.api_url}folders", data=data, headers=self.headers())
+            ).text)
+            return int(data['id'])
+
+    def create_secret(self, folder_name, parent_folder_id, folder_type=1, dump_all_data=False):
+        pass
 
 class SecretServer(SecretServerV1):
     """A class that uses an *OAuth2 Bearer Token* to access the Secret Server
@@ -333,12 +413,12 @@ class SecretServer(SecretServerV1):
     """
 
     def __init__(
-        self,
-        base_url,
-        username,
-        password,
-        api_path_uri=SecretServerV1.API_PATH_URI,
-        token_path_uri=PasswordGrantAuthorizer.TOKEN_PATH_URI,
+            self,
+            base_url,
+            username,
+            password,
+            api_path_uri=SecretServerV1.API_PATH_URI,
+            token_path_uri=PasswordGrantAuthorizer.TOKEN_PATH_URI,
     ):
         super().__init__(
             base_url,
