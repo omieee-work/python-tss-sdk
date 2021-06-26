@@ -1,12 +1,15 @@
 # The Thycotic Secret Server Python SDK [MODIFIED BY OM SHANKER]
 
-# UPDATE ON NEW FUNCTIONS ADDED
+## UPDATE on new functions
+
 This is the modefied verion of Python SDK that includes mission functionality required to use it to manage keys and folders inside Secret Server. Following functionality has been added.
 
 - ``` search_secret ``` This function can be used to search a secret and it return an ``` int ``` id that represents secret_id. It can also return a JSON value if the function is called with ``` dump_all_data=True ```
 - ``` search_folder ``` This function can be used to search a folder and it return an ``` int ``` id that represents folder_id. It can also return a JSON value if the function is called with ``` dump_all_data=True ```
 - ``` create_folder ``` This function can create a new folder inside a given folder. It returns an ``` int ``` id that represents the newly created folder id.
 - ``` create_secret ``` This function can create a new secret and returns am ``` int ``` id that represents the secret_id of newly created secret
+
+## FOLLOWING CONTENTS ARE A PART OF ORIGINAL PROJECT
 
 ![PyPI Version](https://img.shields.io/pypi/v/python-tss-sdk) ![License](https://img.shields.io/github/license/thycotic/python-tss-sdk) ![Python Versions](https://img.shields.io/pypi/pyversions/python-tss-sdk)
 
