@@ -2,7 +2,7 @@
 
 ## UPDATE on new functions
 
-This is the modefied verion of Python SDK that includes mission functionality required to use it to manage keys and folders inside Secret Server. Following functionality has been added.
+This is the modefied verion of Python SDK that includes missing functionality required to use it to manage keys and folders inside Secret Server. Following functionality has been added.
 
 - ``` search_secret ``` This function can be used to search a secret and it return an ``` int ``` id that represents secret_id. It can also return a JSON value if the function is called with ``` dump_all_data=True ```
 - ``` search_folder ``` This function can be used to search a folder and it return an ``` int ``` id that represents folder_id. It can also return a JSON value if the function is called with ``` dump_all_data=True ```
